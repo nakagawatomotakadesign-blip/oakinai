@@ -1,0 +1,50 @@
+name: daily-screen
+
+on:
+  schedule:
+    # 21:37 UTC = 翌朝 06:37 JST（毎時00/30分は混雑して起動が遅れやすいので少しずらす）
+    - cron: "37 21 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: "初回のみ: 過去何営業日分の日足をキャッシュするか（RS計算に270推奨）"
+        default: "0"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: screen
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75   # 暴走時に分数を食い潰さないための保険（通常運転は3分）
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run screen
+        env:
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days || '0' }}
+        run: python scripts/screen.py
+      - name: Commit results
+        run: |
+          git config user.name "screen-bot"
+          git config user.email "screen-bot@users.noreply.github.com"
+          git add docs/data cache
+          git rm -r --cached --ignore-unmatch cache/daily.parquet > /dev/null 2>&1 || true
+          git diff --cached --quiet || git commit -m "screen: $(date -u +%F)"
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - uses: actions/deploy-pages@v4

@@ -1,0 +1,506 @@
+{
+ "NVDA": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "AMD": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "MU": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "AVGO": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "TSM": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "MRVL": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "QCOM": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "INTC": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "ON": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "TXN": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "ARM": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "SMCI": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "NXPI": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "ADI": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "MCHP": {
+  "industry": "半導体",
+  "sector": "テクノロジー"
+ },
+ "ASML": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "AMAT": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "LRCX": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "KLAC": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "TER": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "ENTG": {
+  "industry": "半導体製造装置・材料",
+  "sector": "テクノロジー"
+ },
+ "LITE": {
+  "industry": "光通信",
+  "sector": "テクノロジー"
+ },
+ "COHR": {
+  "industry": "光通信",
+  "sector": "テクノロジー"
+ },
+ "CIEN": {
+  "industry": "光通信",
+  "sector": "テクノロジー"
+ },
+ "AAOI": {
+  "industry": "光通信",
+  "sector": "テクノロジー"
+ },
+ "FN": {
+  "industry": "光通信",
+  "sector": "テクノロジー"
+ },
+ "SNDK": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "DELL": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "HPQ": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "HPE": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "WDC": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "STX": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "PSTG": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "NTAP": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "ANET": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "AAPL": {
+  "industry": "民生用電子機器",
+  "sector": "テクノロジー"
+ },
+ "SONY": {
+  "industry": "民生用電子機器",
+  "sector": "テクノロジー"
+ },
+ "GRMN": {
+  "industry": "民生用電子機器",
+  "sector": "テクノロジー"
+ },
+ "META": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "GOOGL": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "GOOG": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "SPOT": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "RDDT": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "PINS": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "SNAP": {
+  "industry": "インターネットコンテンツ・情報",
+  "sector": "コミュニケーションサービス"
+ },
+ "MSFT": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "ORCL": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "PLTR": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "SNOW": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "MDB": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "NET": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "DDOG": {
+  "industry": "ソフトウェア（インフラ）",
+  "sector": "テクノロジー"
+ },
+ "CRM": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "NOW": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "ADBE": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "INTU": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "SHOP": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "UBER": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "APP": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "WDAY": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "ADSK": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "TEAM": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "HUBS": {
+  "industry": "ソフトウェア（アプリケーション）",
+  "sector": "テクノロジー"
+ },
+ "CRWD": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "PANW": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "ZS": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "FTNT": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "S": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "OKTA": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "CYBR": {
+  "industry": "サイバーセキュリティ",
+  "sector": "テクノロジー"
+ },
+ "AMZN": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "MELI": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "BABA": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "PDD": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "JD": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "SE": {
+  "industry": "インターネット小売",
+  "sector": "一般消費財"
+ },
+ "TSLA": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "RIVN": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "LCID": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "F": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "GM": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "TM": {
+  "industry": "自動車メーカー",
+  "sector": "一般消費財"
+ },
+ "RTX": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "AVAV": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "LMT": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "NOC": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "GD": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "BA": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "LHX": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "RKLB": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "KTOS": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "BE": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "VRT": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "GEV": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "ETN": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "EMR": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "VST": {
+  "industry": "電気機器・部品",
+  "sector": "資本財・サービス"
+ },
+ "JPM": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "BAC": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "WFC": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "C": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "GS": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "MS": {
+  "industry": "銀行（総合）",
+  "sector": "金融"
+ },
+ "BRK-B": {
+  "industry": "保険（総合）",
+  "sector": "金融"
+ },
+ "BRK.B": {
+  "industry": "保険（総合）",
+  "sector": "金融"
+ },
+ "XOM": {
+  "industry": "石油・ガス（統合）",
+  "sector": "エネルギー"
+ },
+ "CVX": {
+  "industry": "石油・ガス（統合）",
+  "sector": "エネルギー"
+ },
+ "SHEL": {
+  "industry": "石油・ガス（統合）",
+  "sector": "エネルギー"
+ },
+ "BP": {
+  "industry": "石油・ガス（統合）",
+  "sector": "エネルギー"
+ },
+ "COP": {
+  "industry": "石油・ガス（統合）",
+  "sector": "エネルギー"
+ },
+ "PSX": {
+  "industry": "石油・ガス精製・販売",
+  "sector": "エネルギー"
+ },
+ "VLO": {
+  "industry": "石油・ガス精製・販売",
+  "sector": "エネルギー"
+ },
+ "MPC": {
+  "industry": "石油・ガス精製・販売",
+  "sector": "エネルギー"
+ },
+ "NFLX": {
+  "industry": "ストリーミング・娯楽",
+  "sector": "コミュニケーションサービス"
+ },
+ "DIS": {
+  "industry": "ストリーミング・娯楽",
+  "sector": "コミュニケーションサービス"
+ },
+ "WBD": {
+  "industry": "ストリーミング・娯楽",
+  "sector": "コミュニケーションサービス"
+ },
+ "ROKU": {
+  "industry": "ストリーミング・娯楽",
+  "sector": "コミュニケーションサービス"
+ },
+ "COIN": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "MSTR": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "HOOD": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "MARA": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "RIOT": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "OKLO": {
+  "industry": "原子力・電力",
+  "sector": "公益事業"
+ },
+ "SMR": {
+  "industry": "原子力・電力",
+  "sector": "公益事業"
+ },
+ "CEG": {
+  "industry": "原子力・電力",
+  "sector": "公益事業"
+ },
+ "NRG": {
+  "industry": "原子力・電力",
+  "sector": "公益事業"
+ }
+}
