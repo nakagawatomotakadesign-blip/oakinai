@@ -75,6 +75,10 @@ def fetch_universe() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------- Polygon ---
+class NotYetPublished(Exception):
+    """無料枠ではまだ配信されていない日（直近営業日は確定が遅れる）。"""
+
+
 def polygon_grouped(day: date) -> pd.DataFrame | None:
     url = f"https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/{day.isoformat()}"
     for attempt in range(4):
@@ -82,6 +86,8 @@ def polygon_grouped(day: date) -> pd.DataFrame | None:
         if r.status_code == 429:
             time.sleep(60)
             continue
+        if r.status_code == 403:
+            raise NotYetPublished(day.isoformat())
         r.raise_for_status()
         js = r.json()
         if js.get("resultsCount", 0) == 0:
@@ -133,7 +139,15 @@ def update_cache(cache: pd.DataFrame) -> pd.DataFrame:
     frames = [cache] if len(cache) else []
     for i, d in enumerate(want):
         print(f"[polygon] {d} ({i+1}/{len(want)})", flush=True)
-        df = polygon_grouped(d)
+        try:
+            df = polygon_grouped(d)
+        except NotYetPublished:
+            # 直近営業日は無料枠への配信が遅れる。次の実行で取り直すのでここでは落とさない。
+            # 確定済みの過去日が 403 の場合はキー／プランの異常なので落とす。
+            if d < latest - timedelta(days=3):
+                raise
+            print(f"[polygon] {d} は未配信のためスキップ", flush=True)
+            continue
         if df is not None:
             save_day(df, d)
             frames.append(df[df["close"] * df["volume"] >= MIN_DV])
