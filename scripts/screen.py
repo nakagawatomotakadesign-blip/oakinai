@@ -116,9 +116,12 @@ def prune_cache() -> None:
 def update_cache(cache: pd.DataFrame) -> pd.DataFrame:
     """今日から遡って未取得の日を取りに行く。初回は BACKFILL_DAYS 分。"""
     have = set(pd.to_datetime(cache["date"]).dt.date) if len(cache) else set()
-    today_utc = datetime.now(timezone.utc).date()
-    # 米国市場の当日分は 米東部 20:00 頃に確定。JST 6:30 = ET 17:30 なので前日(ET)を最新とする
-    latest = today_utc - timedelta(days=1)
+    now = datetime.now(timezone.utc)
+    # 米国市場の引けは 20:00 UTC（夏時間）/ 21:00 UTC（冬時間）。
+    # 21時台以降に実行されていれば、その日の米国セッションは終わっている。
+    latest = now.date() if now.hour >= 21 else now.date() - timedelta(days=1)
+    while latest.weekday() >= 5:      # 土日は直前の平日まで戻す
+        latest -= timedelta(days=1)
     n_days = BACKFILL_DAYS if not have else 7  # 通常運転は直近7日を見て抜けを埋める
     want = []
     d = latest

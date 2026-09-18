@@ -4,6 +4,8 @@ on:
   schedule:
     # 21:37 UTC = 翌朝 06:37 JST（毎時00/30分は混雑して起動が遅れやすいので少しずらす）
     - cron: "37 21 * * 0-4"
+    # 保険の2回目（1回目が遅延・失敗しても取り直す）
+    - cron: "30 23 * * 0-4"
   workflow_dispatch:
     inputs:
       backfill_days:
