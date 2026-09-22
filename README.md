@@ -8,6 +8,7 @@
 scripts/screen.py              データ取得・計算・JSON出力
 scripts/industry_ja.json       Nasdaq 業種 → 日本語 の対応表
 scripts/theme_overrides.json   ティッカー単位の「テーマ反映」上書き（ASML→半導体製造装置 など）
+scripts/schedule_report.py     schedule 起動の遅れを集計（手元で実行: python scripts/schedule_report.py --since YYYY-MM-DD）
 docs/index.html                フロントエンド（静的・JSONを読むだけ）
 docs/data/YYYY-MM-DD.json      日次結果（履歴として蓄積）
 cache/daily/YYYY-MM-DD.parquet 日足キャッシュ（1日1ファイル・RS計算用）
