@@ -1,13 +1,16 @@
 name: daily-screen
+# schedule 起動時はどの cron が発火したかを run 名に残す（起動遅れの集計用: scripts/schedule_report.py）
+run-name: daily-screen ${{ github.event.schedule }}
 
 on:
   schedule:
     # 21:37 UTC = 翌朝 06:37 JST（毎時00/30分は混雑して起動が遅れやすいので少しずらす）
     - cron: "37 21 * * 0-4"
-    # 06:00 UTC = 15:00 JST。Polygon 無料枠が前営業日分を解放した後に最新セッションへ更新する
+    # 以下2本は Polygon 無料枠が前営業日分を解放した後に最新セッションへ更新する回
     # （21:37 の回は解放前なので前営業日のデータで公開を維持する役割）
     # 前日の営業日を取る回なので火〜土（UTC）に走らせる。土曜の回で金曜のセッションを取る
-    - cron: "0 6 * * 2-6"
+    - cron: "17 6 * * 2-6"    # 15:17 JST 本命（Polygon 解放後、00分の混雑を避ける）
+    - cron: "17 9 * * 2-6"    # 18:17 JST 保険（本命が起動しなかった日の取り直し）
   workflow_dispatch:
     inputs:
       backfill_days:
