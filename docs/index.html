@@ -191,7 +191,7 @@ function renderTable(){
   const rows=filtered();
   const sec=r=>S.cls==="theme"?r.theme_sector:r.sector, ind=r=>S.cls==="theme"?r.theme_industry:r.industry;
   $("#tbody").innerHTML=rows.map(r=>`<tr>
-    <td>${r.rank}</td><td class="l"><a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(r.ticker.replace(".","-"))}" target="_blank" rel="noopener">${r.ticker}</a></td>
+    <td>${r.rank}</td><td class="l"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a></td>
     <td class="l co" title="${r.name}">${r.name}</td><td class="l"><span class="tag ${r.size}">${SZ[r.size]}</span></td>
     <td class="dv">${fmtB(r.dv5)}</td><td>$${r.price.toFixed(2)}</td><td>${fmtN(r.volume)}</td>
     <td class="${r.chg>0?"up":r.chg<0?"down":""}">${r.chg==null?"—":(r.chg>0?"+":"")+r.chg.toFixed(2)+"%"}</td>
