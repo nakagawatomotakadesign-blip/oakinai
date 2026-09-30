@@ -1,10 +1,10 @@
 # 大商いスクリーナー
 
-米国株の売買代金（株価×出来高）5日平均 上位150 を毎朝 6:30 JST に自動更新し、GitHub Pages で公開します。
+米国株の売買代金（株価×出来高）5日平均 上位150 を 火〜土 15:00 JST に自動更新し、GitHub Pages で公開します。
 
 ## 構成
 ```
-.github/workflows/screen.yml   毎日 21:30 UTC（=06:30 JST）に実行
+.github/workflows/screen.yml   火〜土 06:00 UTC（=15:00 JST）に cron-job.org から起動（保険で 09:17 UTC の schedule も）
 scripts/screen.py              データ取得・計算・JSON出力
 scripts/industry_ja.json       Nasdaq 業種 → 日本語 の対応表
 scripts/theme_overrides.json   ティッカー単位の「テーマ反映」上書き（ASML→半導体製造装置 など）
@@ -24,7 +24,7 @@ cache/daily/YYYY-MM-DD.parquet 日足キャッシュ（1日1ファイル・RS計
    （無料枠は 5 リクエスト/分のため約 55 分かかります。1回だけ）
 6. 完了後 `https://<ユーザー名>.github.io/<リポジトリ名>/` で表示
 
-以後は毎朝 6:30 JST に自動実行され、直近分だけ差分取得します（数十秒で終わります）。
+以後は 火〜土 15:00 JST に自動実行され、直近分だけ差分取得します（数十秒で終わります）。
 
 ## ローカルで試す
 ```
@@ -44,7 +44,12 @@ cd docs && python -m http.server 8000                             # http://local
 ## カスタマイズ
 - 業種の日本語名: `scripts/industry_ja.json`
 - テーマ反映（特定銘柄の業種を上書き）: `scripts/theme_overrides.json`
-- 実行時刻: `screen.yml` の cron（UTC）。JST 6:37 = UTC 21:37 前日。毎時00分・30分は GitHub 側が混雑して起動が数十分遅れることがあるため、あえてずらしています
+- 実行時刻: 2系統で動かしています
+  - メイン: cron-job.org から `workflow_dispatch` を **火〜土 15:00 JST（06:00 UTC）** に起動。実測で遅れは1分未満
+  - 保険: `screen.yml` の schedule で **火〜土 18:17 JST（09:17 UTC）**。cron-job.org が止まった日の取り直し用で、取得済みなら何もせず終わります
+  - どちらも「前営業日」を取ります。Polygon 無料枠は米東部の日付が変わる頃（夏時間で 04:00 UTC 前後）まで当日分を配信しないため、それより前に走らせても空振りします
+  - GitHub の schedule は混雑時に起動が1〜5時間遅れる（実測で最大4時間42分）ため、メインは外部スケジューラに任せています
+  - cron-job.org が `workflow_dispatch` に使っているトークンの期限は **2027-09-22** です。失効すると 15:00 JST の更新が止まり、18:17 JST の保険だけが動きます
 - 上位件数: `screen.py` の `TOP_N`
 - キャッシュ対象の絞り込み: `screen.py` の `MIN_DV`（既定 $1M）。小さくすると容量が増えます
 
@@ -56,5 +61,5 @@ cd docs && python -m http.server 8000                             # http://local
 
 ## 注意
 - Nasdaq screener API は非公式のため、仕様変更時は `fetch_universe()` の調整が必要です
-- Polygon 無料枠は前日終値まで（当日リアルタイムは不可）。6:30 JST 実行なら米国当日分が反映されます
+- Polygon 無料枠は前営業日の終値まで（当日リアルタイムは不可）。前営業日分の配信は米東部の日付が変わる頃（夏時間で 04:00 UTC 前後）に始まるため、15:00 JST 実行で前夜の米国セッションが反映されます
 - 市場データの正確性は保証されません。投資助言ではありません
