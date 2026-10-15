@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -163,6 +164,22 @@ def update_cache(cache: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------- Compute ---
+# 社名末尾の証券種別（"Class A Common Stock" "Ordinary Shares (Ireland)" "Common Stock Class A" など）
+SECURITY_SUFFIX = re.compile(
+    r"\s+(?:Class [A-Z]\s+)?"
+    r"(?:Common Stock|Capital Stock|Common Shares|Ordinary Shares|Subordinate Voting Shares"
+    r"|New York Registry Shares|American Depositary Shares)"
+    r"(?:\s+Class [A-Z])?(?:\s+\([^)]*\))?$",
+    re.IGNORECASE)
+
+
+def clean_name(name: str) -> str:
+    """表示用の社名。証券種別の末尾を落とす（(The) や (REIT) など社名側の括弧は残す）。"""
+    s = str(name).strip()
+    out = SECURITY_SUFFIX.sub("", s).strip()
+    return out or s
+
+
 def percentile_rank(s: pd.Series) -> pd.Series:
     return (s.rank(pct=True) * 98 + 1).round().clip(1, 99)
 
@@ -176,10 +193,12 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
 
     close = cache.pivot(index="date", columns="symbol", values="close").sort_index()
     vol = cache.pivot(index="date", columns="symbol", values="volume").sort_index()
+    opn = cache.pivot(index="date", columns="symbol", values="open").sort_index()
     dollar = (close * vol)
 
     last = pd.DataFrame({
         "close": close.loc[asof],
+        "open": opn.loc[asof],
         "prev_close": close.loc[prev],
         "volume": vol.loc[asof],
         "dv5": dollar.tail(5).mean(),
@@ -233,8 +252,9 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     rows = []
     for i, r in top.iterrows():
         rows.append({
-            "rank": i + 1, "ticker": r["symbol"], "name": r["name"], "size": r["size"],
-            "dv5": f(r["dv5"], 0), "price": f(r["close"]), "volume": int(r["volume"]),
+            "rank": i + 1, "ticker": r["symbol"], "name": clean_name(r["name"]), "size": r["size"],
+            "dv5": f(r["dv5"], 0), "price": f(r["close"]), "open": f(r["open"]),
+            "volume": int(r["volume"]),
             "chg": f(r["chg"]), "mcap": f(r["mcap"], 0), "relvol": f(r["relvol"], 1),
             "rs": None if pd.isna(r["rs"]) else int(r["rs"]),
             "ind_rs": None if pd.isna(r["ind_rs"]) else int(r["ind_rs"]),
