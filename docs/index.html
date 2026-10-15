@@ -19,7 +19,7 @@ button,select,input{font:inherit;color:inherit}
 header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding:4px 16px 10px}
 header h1{margin:0;font-size:28px;font-weight:800;color:#4ea1ff;letter-spacing:.02em}
 header h1 span{font-size:14px;color:var(--text);font-weight:600;margin-left:10px}
-header .right{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--muted)}
+header .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;color:var(--muted)}
 .cond{color:var(--muted);font-size:12px;padding:0 16px 12px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:22px}
 .panel-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:12px}
@@ -48,7 +48,7 @@ header .right{margin-left:auto;display:flex;gap:12px;align-items:center;color:va
 .donut .slice.sel{stroke:#fff;stroke-width:2}
 .donut text{pointer-events:none}
 .legend{display:grid;gap:3px}
-.legend .lg{display:grid;grid-template-columns:12px 1fr auto auto;gap:14px;align-items:center;width:100%;
+.legend .lg{display:grid;grid-template-columns:12px 1fr auto auto auto;gap:14px;align-items:center;width:100%;
   background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 6px;text-align:left;cursor:pointer}
 .legend .lg:hover{background:#152036}
 .legend .lg:focus-visible{outline:2px solid var(--blue2);outline-offset:1px}
@@ -57,6 +57,17 @@ header .right{margin-left:auto;display:flex;gap:12px;align-items:center;color:va
 .legend i{width:11px;height:11px;border-radius:3px;display:block}
 .legend .p{font-weight:700;text-align:right;min-width:52px}
 .legend .v{color:var(--muted);text-align:right;min-width:74px}
+.legend .d{text-align:left;min-width:76px;font-size:12px;font-weight:600;margin-left:-8px}
+.flat{color:var(--muted)}
+.new{display:inline-block;padding:0 5px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.04em;color:#0b1220;background:#facc15}
+td.mv{text-align:center;font-weight:700}
+.base-info{color:var(--muted);font-size:12px}
+.dropped{color:var(--muted);font-size:12px;line-height:1.9;padding:10px 4px 0;border-top:1px solid var(--line)}
+.dropped[hidden]{display:none}
+.dropped b{color:var(--text);font-weight:600;margin-right:6px}
+.dropped .it{display:inline-block;margin-right:12px;white-space:nowrap}
+.dropped .it a{font-weight:600}
+.dropped .pr{margin-left:3px}
 .note{color:var(--muted);font-size:12px;margin-top:16px}
 .hint{color:var(--muted);font-size:12px;margin:2px 0 6px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:#1a2742;border:1px solid var(--blue2);color:var(--text);
@@ -90,7 +101,11 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
 .empty{padding:30px;text-align:center;color:var(--muted)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1d2b46;border:1px solid var(--blue2);padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .2s}
 .toast.show{opacity:1}
-@media (max-width:760px){.donut{grid-template-columns:1fr}.donut svg{margin:0 auto}.wrap{padding:10px}}
+@media (max-width:760px){.donut{grid-template-columns:1fr}.donut svg{margin:0 auto}.wrap{padding:10px}
+  /* 凡例は 1行目=業種名、2行目=シェア・差・金額 */
+  .legend .lg{grid-template-columns:12px auto 1fr auto;gap:2px 10px}
+  .legend .lg>span:nth-child(2){grid-column:2/-1}
+  .legend .p{grid-column:2;text-align:left;min-width:0}.legend .d{grid-column:3;margin-left:0}.legend .v{grid-column:4}}
 @media (prefers-reduced-motion:reduce){.toast,.donut .slice{transition:none}}
 </style>
 </head>
@@ -98,7 +113,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
 <div class="wrap">
   <header>
     <h1>💰 大商い<span>売買代金5日平均 上位150（全規模）</span></h1>
-    <div class="right"><span>日付</span><select id="dateSel"></select></div>
+    <div class="right"><span>日付</span><select id="dateSel"></select>
+      <span class="lbl">比較</span><div class="seg" data-key="cmp"><button data-v="1" class="on">前営業日</button><button data-v="5">5営業日前</button></div>
+      <span class="base-info" id="baseInfo"></span></div>
   </header>
   <div class="cond" id="cond"></div>
 
@@ -137,6 +154,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
       <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
+    <div class="dropped" id="dropped" hidden></div>
   </section>
 
   <footer>売買代金＝株価×出来高の5日移動平均（Polygon 日足データ）。全規模の全体上位150・ETF除外。規模は時価総額の順位（大型=上位150位 / 中型=151〜750位 / 小型=751位以下。楽天スーパースクリーナーの日本区分を米国の銘柄数に比例調整）。騰落（陽線/陰線）は当日のローソク足で判定（陽線＝終値＞始値、陰線＝終値＜始値。終値＝始値は除外）。RS Rating / Industry RS は IBD近似。市場データの正確性は保証されません。投資助言ではありません。</footer>
@@ -148,9 +166,18 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
 const COLORS=["#3b82f6","#f97316","#22c55e","#d946ef","#facc15","#22d3ee","#ef4444","#8b5cf6","#f472b6"];
 const OTHER="#64748b";
 const S={ud1:"all",weight:"dv",gran:"industry",size1:"all",cls:"theme",ud2:"all",size2:"all",topn:150,q:"",
+  cmp:"1",  // 比較元: 何営業日前か（"1"=前営業日 / "5"=5営業日前）
   sort:{k:"dv5",dir:"desc"},
   ind:null};  // 業種の絞り込み {label, other, names:Set, gran, cls}
 let DATA=null, ITEMS=[];
+// 比較元（なければ null）。DATES は index.json の並び（新しい順）なので i+n が n営業日前
+let DATES=[], BASE=null, BASE_RANK=new Map(), LOADSEQ=0;
+const JCACHE=new Map();
+const getDay=d=>{ if(!JCACHE.has(d)) JCACHE.set(d, fetch(`data/${d}.json`,{cache:"no-store"})
+  .then(r=>{ if(!r.ok) throw new Error(`${d}: HTTP ${r.status}`); return r.json(); })
+  .catch(e=>{ JCACHE.delete(d); throw e; }));
+  return JCACHE.get(d); };
+const baseDateOf=d=>{ const i=DATES.indexOf(d); return i<0?null:DATES[i+(+S.cmp)]||null; };
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmtB=v=>v==null?"—":v>=1e12?"$"+(v/1e12).toFixed(2)+"T":v>=1e9?"$"+(v/1e9).toFixed(2)+"B":v>=1e6?"$"+(v/1e6).toFixed(0)+"M":"$"+v.toFixed(0);
@@ -172,19 +199,55 @@ const secOf=r=>S.cls==="theme"?r.theme_sector:r.sector, indOf=r=>S.cls==="theme"
 async function init(){
   renderHead();
   const idx=await (await fetch("data/index.json",{cache:"no-store"})).json();
+  DATES=idx.dates;
   const sel=$("#dateSel");
   sel.innerHTML=idx.dates.map(d=>`<option value="${d}">${d}（150銘柄）</option>`).join("");
   sel.onchange=()=>load(sel.value);
   if(idx.dates.length) load(idx.dates[0]); else $("#tbody").innerHTML=`<tr><td colspan="14" class="empty">まだデータがありません。GitHub Actions を一度実行してください。</td></tr>`;
 }
 async function load(d){
-  DATA=await (await fetch(`data/${d}.json`,{cache:"no-store"})).json();
+  const seq=++LOADSEQ, bd=baseDateOf(d);
+  const [cur,base]=await Promise.all([getDay(d), bd?getDay(bd).catch(()=>null):null]);
+  if(seq!==LOADSEQ) return;  // 連続で切り替えた時は最後の選択だけ反映
+  DATA=cur; setBase(base);
   $("#cond").textContent=`条件: 売買代金（株価×出来高）5日移動平均の全体上位150｜普通株のみ（ETF除外）｜規模は時価総額の順位（大型=上位${DATA.cuts.large}位 / 中型=${DATA.cuts.large+1}〜${DATA.cuts.mid}位 / 小型=${DATA.cuts.mid+1}位以下）｜母集団 ${DATA.universe_count.toLocaleString()} 銘柄　生成: ${fmtJST(DATA.generated)}`;
   $("#sub1").textContent=`${DATA.date}・上位150銘柄が母集団`;
   $("#sub2").textContent=`${DATA.date}・全体上位（売買代金5日平均）`;
   render();
 }
-function render(){ if(!DATA) return; renderDonut(); renderTable(); }
+function render(){ if(!DATA) return; renderDonut(); renderTable(); renderDropped(); }
+
+// ---------------------------------------------------------------- 比較元
+function setBase(base){
+  BASE=base; BASE_RANK=new Map((base?.rows||[]).map(r=>[r.ticker,r.rank]));
+  const lbl=S.cmp==="1"?"前営業日":"5営業日前";
+  $("#baseInfo").textContent=BASE?`比較元 ${BASE.date}（${lbl}）`:`比較元なし（${lbl}のデータがありません）`;
+  if(!BASE&&S.sort.k==="move") S.sort={k:"dv5",dir:"desc"};
+}
+async function reloadBase(){
+  if(!DATA) return;
+  const seq=++LOADSEQ, bd=baseDateOf(DATA.date);
+  const base=bd?await getDay(bd).catch(()=>null):null;
+  if(seq!==LOADSEQ) return;
+  setBase(base); render();
+}
+// 比較元の上位150での順位との差（正=上昇）。"new"=比較元の上位150に不在。比較元なしは null
+const move=r=>{ if(!BASE) return null; const b=BASE_RANK.get(r.ticker); return b==null?"new":b-r.rank; };
+const moveHtml=r=>{ const m=move(r);
+  return m==="new"?`<span class="new">NEW</span>`:m>0?`<span class="up">↑${m}</span>`:m<0?`<span class="down">↓${-m}</span>`:`<span class="flat">→</span>`; };
+// pt 表示（小数1桁で0になるものは ±0.0pt）
+const ptHtml=d=>{ if(d==null) return ""; const v=Math.round(d*10)/10;
+  return v===0?`<span class="flat">（±0.0pt）</span>`:`<span class="${v>0?"up":"down"}">（${v>0?"+":""}${v.toFixed(1)}pt）</span>`; };
+function renderDropped(){
+  const box=$("#dropped");
+  if(!BASE){ box.hidden=true; return; }
+  const now=new Set(DATA.rows.map(r=>r.ticker));
+  const out=BASE.rows.filter(r=>!now.has(r.ticker)).sort((a,b)=>a.rank-b.rank);
+  box.hidden=false;
+  box.innerHTML=`<b>圏外に落ちた銘柄（${out.length}）</b>`+(out.length?out.map(r=>
+    `<span class="it"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a><span class="pr">前回${r.rank}位</span></span>`).join(""):"なし")
+    +`<span class="base-info">　比較元 ${BASE.date} の上位150にあり、${DATA.date} の上位150にない銘柄</span>`;
+}
 
 // ---------------------------------------------------------------- ドーナツ
 function isSel(it){ return !!S.ind && (it.other ? S.ind.other : !S.ind.other && S.ind.label===it.label); }
@@ -195,13 +258,20 @@ function renderDonut(){
   const udLbl={all:"上位150銘柄",up:`上位150中の陽線${rows.length}銘柄`,down:`上位150中の陰線${rows.length}銘柄`}[S.ud1];
   $("#sizes").innerHTML=`<span>${udLbl}の規模内訳</span>`+["large","mid","small"].map(k=>`<span><span class="tag ${k}">${SZ[k]}</span><b>${cnt[k]}</b>(${Math.round(cnt[k]/tot*100)}%)</span>`).join("");
 
-  const sub=rows.filter(r=>S.size1==="all"||r.size===S.size1);
-  const agg={}; sub.forEach(r=>{const k=catKey(r,S.gran,S.cls); agg[k]=(agg[k]||0)+(S.weight==="dv"?r.dv5:1);});
+  const {agg,total:tot0}=aggregate(DATA.rows);
   let ents=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
-  const total=ents.reduce((s,[,v])=>s+v,0)||1;
+  const total=tot0||1;
+  // 比較元も 騰落・規模・粒度・分類・重み を同じ条件で集計（シェアの差を pt で出す）
+  const B=BASE?aggregate(BASE.rows):null;
+  const baseShare=names=>!B||!B.total?null:names.reduce((s,n)=>s+(B.agg[n]||0),0)/B.total*100;
   ITEMS=ents.slice(0,ents.length>9?8:9).map(([k,v],i)=>({label:k,value:v,names:[k],color:COLORS[i],other:false}));
   if(ents.length>9){const rest=ents.slice(8);
     ITEMS.push({label:`その他（${rest.length}種）`,value:rest.reduce((s,[,v])=>s+v,0),names:rest.map(([k])=>k),color:OTHER,other:true});}
+  // 「その他」は名前を出した業種以外すべて。比較元で今日は0%になった業種もここに含めるため、
+  // 比較元シェアは 100 − 名前を出した業種の合計 とする（差の合計が0になる）
+  const named=ITEMS.filter(it=>!it.other).reduce((s,it)=>s+(baseShare(it.names)??0),0);
+  ITEMS.forEach(it=>{const b=it.other?(B&&B.total?100-named:null):baseShare(it.names);
+    it.delta=b==null?null:it.value/total*100-b;});
   const anySel=ITEMS.some(isSel);
 
   const R=100,r0=62,cx=115,cy=115; let a=-Math.PI/2, svg="";
@@ -226,7 +296,13 @@ function renderDonut(){
       +`<text class="c2" x="${cx}" y="${cy+33}" text-anchor="middle">${l2}</text>`;
   const el=$("#donut"); el.innerHTML=svg; fitCenter(el,cx,cy,r0);
   $("#legend").innerHTML=ITEMS.map((it,i)=>{const sel=isSel(it);
-    return `<button type="button" class="lg${sel?" sel":anySel?" dim":""}" data-i="${i}" aria-pressed="${sel}"><i style="background:${it.color}"></i><span>${esc(it.label)}</span><span class="p">${(it.value/total*100).toFixed(1)}%</span><span class="v">${S.weight==="dv"?fmtB(it.value):it.value+"銘柄"}</span></button>`;}).join("")||`<div class="empty">該当なし</div>`;
+    return `<button type="button" class="lg${sel?" sel":anySel?" dim":""}" data-i="${i}" aria-pressed="${sel}"><i style="background:${it.color}"></i><span>${esc(it.label)}</span><span class="p">${(it.value/total*100).toFixed(1)}%</span><span class="d">${ptHtml(it.delta)}</span><span class="v">${S.weight==="dv"?fmtB(it.value):it.value+"銘柄"}</span></button>`;}).join("")||`<div class="empty">該当なし</div>`;
+}
+function aggregate(rows){
+  const agg={}; let total=0;
+  rows.filter(r=>upDown(r,S.ud1)&&(S.size1==="all"||r.size===S.size1)).forEach(r=>{
+    const k=catKey(r,S.gran,S.cls), w=S.weight==="dv"?r.dv5:1; agg[k]=(agg[k]||0)+w; total+=w;});
+  return {agg,total};
 }
 // 明るい色の扇には暗い文字
 function labelInk(hex){const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
@@ -254,6 +330,8 @@ $("#indClear").onclick=()=>{S.ind=null;render();};
 const SIZE_ORDER={large:0,mid:1,small:2};
 const COLS=[
   {k:"rank",  h:"#",                 v:r=>r.rank,              first:"asc"},
+  // NEW は降順（上昇順）で先頭に来るよう最大値扱い
+  {k:"move",  h:"順位変動",          v:r=>{const m=move(r); return m==null?null:m==="new"?1e6:m;}, first:"desc", cmp:1},
   {k:"ticker",h:"Ticker",           v:r=>r.ticker,            first:"asc", l:1},
   {k:"name",  h:"Company",          v:r=>r.name,              first:"asc", l:1},
   {k:"size",  h:"規模",              v:r=>SIZE_ORDER[r.size],  first:"asc", l:1},
@@ -268,16 +346,17 @@ const COLS=[
   {k:"sec",   h:"Sector",           v:r=>secOf(r),            first:"asc", l:1},
   {k:"ind",   h:"Industry",         v:r=>indOf(r),            first:"asc", l:1},
 ];
+const shownCols=()=>COLS.filter(c=>!c.cmp||BASE);
 function renderHead(){
-  $("#thead").innerHTML=COLS.map(c=>{const on=S.sort.k===c.k, up=S.sort.dir==="asc";
+  $("#thead").innerHTML=shownCols().map(c=>{const on=S.sort.k===c.k, up=S.sort.dir==="asc";
     const aria=on?(up?"ascending":"descending"):"none";
     const arr=on?`<span class="arr">${up?"▲":"▼"}</span>`:`<span class="arr idle">▼</span>`;
-    return `<th class="${c.l?"l":""}${on?" on":""}" aria-sort="${aria}"><button type="button" class="sh" data-k="${c.k}" title="${esc(c.h)}で並べ替え">${esc(c.h)}${arr}</button></th>`;}).join("");
+    return `<th class="${c.l?"l":""}${on?" on":""}" aria-sort="${aria}"><button type="button" class="sh" data-k="${c.k}" title="${c.k==="move"&&BASE?`比較元 ${BASE.date} の順位との差。`:""}${esc(c.h)}で並べ替え">${esc(c.h)}${arr}</button></th>`;}).join("");
 }
 $("#thead").addEventListener("click",e=>{const b=e.target.closest("button[data-k]"); if(!b) return;
   const c=COLS.find(x=>x.k===b.dataset.k);
   S.sort=S.sort.k===c.k?{k:c.k,dir:S.sort.dir==="asc"?"desc":"asc"}:{k:c.k,dir:c.first};
-  renderHead(); renderTable();
+  renderTable();
 });
 function filtered(){
   const q=S.q.trim().toLowerCase();
@@ -295,19 +374,20 @@ function visible(){
     return d?sgn*d:a.rank-b.rank;});
 }
 function renderTable(){
+  renderHead();
   const chip=$("#indChip");
   if(S.ind){chip.hidden=false; $("#indChipText").textContent=`${S.ind.gran==="sector"?"セクター":"業種"}: ${S.ind.label}`;}
   else chip.hidden=true;
   const rows=visible();
   $("#tbody").innerHTML=rows.map(r=>`<tr>
-    <td>${r.rank}</td><td class="l"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a></td>
+    <td>${r.rank}</td>${BASE?`<td class="mv">${moveHtml(r)}</td>`:""}<td class="l"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a></td>
     <td class="l co" title="${esc(r.name)}">${esc(r.name)}</td><td class="l"><span class="tag ${r.size}">${SZ[r.size]}</span></td>
     <td class="dv">${fmtB(r.dv5)}</td><td>$${r.price.toFixed(2)}</td><td>${fmtN(r.volume)}</td>
     <td class="${r.chg>0?"up":r.chg<0?"down":""}">${r.chg==null?"—":(r.chg>0?"+":"")+r.chg.toFixed(2)+"%"}</td>
     <td>${fmtB(r.mcap)}</td><td>${r.relvol==null?"—":r.relvol.toFixed(1)}</td>
     <td><span class="rs ${rsCls(r.rs)}">${r.rs??"—"}</span></td><td><span class="rs ${indCls(r.ind_rs)}">${r.ind_rs??"—"}</span></td>
     <td class="l sec" title="${esc(secOf(r))}">${esc(secOf(r))}</td><td class="l sec" title="${esc(indOf(r))}">${esc(indOf(r))}</td></tr>`).join("")
-    ||`<tr><td colspan="14" class="empty">条件に合う銘柄がありません</td></tr>`;
+    ||`<tr><td colspan="${shownCols().length}" class="empty">条件に合う銘柄がありません</td></tr>`;
 }
 
 document.querySelectorAll(".seg").forEach(seg=>seg.addEventListener("click",e=>{
@@ -315,7 +395,7 @@ document.querySelectorAll(".seg").forEach(seg=>seg.addEventListener("click",e=>{
   seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
   const k=seg.dataset.key; S[k]=b.dataset.v;
   if(k==="gran"||k==="cls") S.ind=null;  // 分類の軸が変わると業種名が対応しないので解除
-  render();
+  if(k==="cmp") reloadBase(); else render();
 }));
 $("#size2").onchange=e=>{S.size2=e.target.value;renderTable();};
 $("#topn").onchange=e=>{S.topn=+e.target.value;renderTable();};
