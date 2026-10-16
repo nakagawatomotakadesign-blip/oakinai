@@ -76,7 +76,8 @@ def fetch_universe() -> pd.DataFrame:
     df["symbol"] = df["symbol"].str.strip().str.replace("/", ".", regex=False)  # BRK/B -> BRK.B
     df = df.drop_duplicates("symbol")
     for c in ("sector", "industry"):
-        df[c] = df[c].fillna("").replace("", "Unclassified")
+        # Nasdaq の分類名は前後に空白が付くことがある（" Medicinal Chemicals..." など）
+        df[c] = df[c].fillna("").astype(str).str.strip().replace("", "Unclassified")
     return df[["symbol", "name", "mcap", "sector", "industry"]].reset_index(drop=True)
 
 
@@ -265,6 +266,12 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     df["relvol"] = df["volume"] / df["vol63"]
 
     # 日本語分類（原分類 + テーマ反映）
+    for kind in ("sector", "industry"):
+        missing = df.loc[~df[kind].isin(MAP_JA[kind].keys()), kind].value_counts()
+        if len(missing):
+            print(f"[industry_ja] 訳のない{'セクター' if kind == 'sector' else '業種'} {len(missing)}件:", flush=True)
+            for name, n in missing.items():
+                print(f"  {n:4d}銘柄  {name}", flush=True)
     df["sector_ja"] = df["sector"].map(lambda s: MAP_JA["sector"].get(s, s))
     df["industry_ja"] = df["industry"].map(lambda s: MAP_JA["industry"].get(s, s))
     df["theme_ja"] = df.apply(

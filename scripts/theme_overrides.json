@@ -44,7 +44,7 @@
   "sector": "テクノロジー"
  },
  "SMCI": {
-  "industry": "半導体",
+  "industry": "コンピュータハードウェア",
   "sector": "テクノロジー"
  },
  "NXPI": {
@@ -124,10 +124,6 @@
   "sector": "テクノロジー"
  },
  "STX": {
-  "industry": "コンピュータハードウェア",
-  "sector": "テクノロジー"
- },
- "PSTG": {
   "industry": "コンピュータハードウェア",
   "sector": "テクノロジー"
  },
@@ -384,8 +380,8 @@
   "sector": "資本財・サービス"
  },
  "VST": {
-  "industry": "電気機器・部品",
-  "sector": "資本財・サービス"
+  "industry": "原子力・電力",
+  "sector": "公益事業"
  },
  "JPM": {
   "industry": "銀行（総合）",
@@ -506,5 +502,123 @@
  "SPCX": {
   "industry": "航空宇宙・防衛",
   "sector": "資本財・サービス"
+ },
+ "GE": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
+ },
+ "PM": {
+  "industry": "たばこ",
+  "sector": "生活必需品"
+ },
+ "TMO": {
+  "industry": "研究機器",
+  "sector": "ヘルスケア"
+ },
+ "DHR": {
+  "industry": "研究機器",
+  "sector": "ヘルスケア"
+ },
+ "ISRG": {
+  "industry": "医療機器",
+  "sector": "ヘルスケア"
+ },
+ "P": {
+  "industry": "コンピュータハードウェア",
+  "sector": "テクノロジー"
+ },
+ "VZ": {
+  "industry": "通信サービス",
+  "sector": "コミュニケーションサービス"
+ },
+ "T": {
+  "industry": "通信サービス",
+  "sector": "コミュニケーションサービス"
+ },
+ "TMUS": {
+  "industry": "通信サービス",
+  "sector": "コミュニケーションサービス"
+ },
+ "AAL": {
+  "industry": "航空",
+  "sector": "資本財・サービス"
+ },
+ "DAL": {
+  "industry": "航空",
+  "sector": "資本財・サービス"
+ },
+ "UAL": {
+  "industry": "航空",
+  "sector": "資本財・サービス"
+ },
+ "LUV": {
+  "industry": "航空",
+  "sector": "資本財・サービス"
+ },
+ "HUM": {
+  "industry": "医療保険",
+  "sector": "ヘルスケア"
+ },
+ "UNH": {
+  "industry": "医療保険",
+  "sector": "ヘルスケア"
+ },
+ "CI": {
+  "industry": "医療保険",
+  "sector": "ヘルスケア"
+ },
+ "ELV": {
+  "industry": "医療保険",
+  "sector": "ヘルスケア"
+ },
+ "CRWV": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "IREN": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "CIFR": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "NBIS": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "APLD": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "WULF": {
+  "industry": "AIデータセンター",
+  "sector": "テクノロジー"
+ },
+ "V": {
+  "industry": "決済",
+  "sector": "金融"
+ },
+ "MA": {
+  "industry": "決済",
+  "sector": "金融"
+ },
+ "PYPL": {
+  "industry": "決済",
+  "sector": "金融"
+ },
+ "CRCL": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "WMT": {
+  "sector": "生活必需品"
+ },
+ "COST": {
+  "sector": "生活必需品"
+ },
+ "PG": {
+  "industry": "日用品・化粧品",
+  "sector": "生活必需品"
  }
 }
