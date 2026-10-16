@@ -502,5 +502,9 @@
  "NRG": {
   "industry": "原子力・電力",
   "sector": "公益事業"
+ },
+ "SPCX": {
+  "industry": "航空宇宙・防衛",
+  "sector": "資本財・サービス"
  }
 }

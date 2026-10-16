@@ -40,6 +40,11 @@ RS_LOOKBACK = 252              # 12ヶ月
 CACHE_KEEP = 300               # キャッシュに残す営業日数
 POLYGON_SLEEP = 12.5           # 無料枠 5req/分 → 12秒間隔
 MIN_DV = 1_000_000             # 売買代金がこれ未満の銘柄はキャッシュしない（容量削減）
+RS_WEIGHTS = {63: 0.4, 126: 0.2, 189: 0.2, 252: 0.2}  # 3/6/9/12ヶ月リターンの重み
+# ティッカー変更（新: 旧）。新ティッカーの初出より前を旧ティッカーの終値でつなぎ、RS を12ヶ月で計算する
+TICKER_CHANGES = {
+    "P": "PSTG",  # Pure Storage → Everpure（2026-04-17 から P）
+}
 
 
 # ---------------------------------------------------------------- Nasdaq ----
@@ -208,17 +213,40 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     last = last.reset_index()
 
     # RS Rating（IBD近似: 3ヶ月に2倍の重み）
+    px = close.copy()
+    for new, old in TICKER_CHANGES.items():
+        if new in px and old in px and px[new].notna().any():
+            px[new] = px[new].fillna(px[old].where(px.index < px[new].first_valid_index()))
+
     def ret(n):
-        if len(close) > n:
-            return close.iloc[-1] / close.iloc[-1 - n] - 1
-        return pd.Series(np.nan, index=close.columns)
-    rs_raw = 0.4 * ret(63) + 0.2 * ret(126) + 0.2 * ret(189) + 0.2 * ret(252)
-    rs_ok = len(close) > 252
+        if len(px) > n:
+            return px.iloc[-1] / px.iloc[-1 - n] - 1
+        return pd.Series(np.nan, index=px.columns)
+    rets = {n: ret(n) for n in RS_WEIGHTS}
+    rs_raw = sum(w * rets[n] for n, w in RS_WEIGHTS.items())
+    rs_ok = len(px) > 252
+    # 上場1年未満（初出が12ヶ月前より後）の銘柄は、存在する期間の重みを合計1に配分し直した参考値
+    # （3ヶ月分もない銘柄は出さない）。データの欠けで12ヶ月前が無いだけの銘柄は対象外
+    young = px.apply(lambda s: s.first_valid_index()) > px.index[-1 - 252] if rs_ok else pd.Series(False, index=px.columns)
+    avail = {n: rets[n].notna() & young for n in RS_WEIGHTS}
+    wsum = sum(w * avail[n] for n, w in RS_WEIGHTS.items())
+    rs_young = sum(w * rets[n].where(avail[n], 0) for n, w in RS_WEIGHTS.items()) / wsum.where(wsum > 0)
+    rs_young = rs_young.where(avail[63])
 
     df = universe.merge(last, on="symbol", how="inner")
     df = df.dropna(subset=["close", "prev_close", "dv5"])
     df["rs_raw"] = df["symbol"].map(rs_raw)
     df["rs"] = percentile_rank(df["rs_raw"]) if rs_ok else np.nan
+    # 参考値は12ヶ月そろった銘柄の分布に当てはめて順位化する（既存銘柄の RS は変えない）
+    df["rs_ref"] = False
+    if rs_ok:
+        full = np.sort(df["rs_raw"].dropna().to_numpy())
+        ry = df["symbol"].map(rs_young)
+        m = df["rs"].isna() & ry.notna()
+        if len(full) and m.any():
+            pct = np.searchsorted(full, ry[m].to_numpy(), side="right") / len(full)
+            df.loc[m, "rs"] = np.clip(np.round(pct * 98 + 1), 1, 99)
+            df.loc[m, "rs_ref"] = True
 
     # 規模 = 時価総額順位
     df["mcap_rank"] = df["mcap"].rank(ascending=False, method="first").astype(int)
@@ -257,6 +285,7 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
             "volume": int(r["volume"]),
             "chg": f(r["chg"]), "mcap": f(r["mcap"], 0), "relvol": f(r["relvol"], 1),
             "rs": None if pd.isna(r["rs"]) else int(r["rs"]),
+            **({"rs_ref": True} if r["rs_ref"] else {}),
             "ind_rs": None if pd.isna(r["ind_rs"]) else int(r["ind_rs"]),
             "sector": r["sector_ja"], "industry": r["industry_ja"],
             "theme_sector": r["theme_sector_ja"], "theme_industry": r["theme_ja"],
