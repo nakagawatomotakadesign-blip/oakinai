@@ -620,5 +620,21 @@
  "PG": {
   "industry": "日用品・化粧品",
   "sector": "生活必需品"
+ },
+ "BMNR": {
+  "industry": "暗号資産",
+  "sector": "金融"
+ },
+ "SPGI": {
+  "industry": "金融データ・格付け",
+  "sector": "金融"
+ },
+ "MCO": {
+  "industry": "金融データ・格付け",
+  "sector": "金融"
+ },
+ "MSCI": {
+  "industry": "金融データ・格付け",
+  "sector": "金融"
  }
 }
