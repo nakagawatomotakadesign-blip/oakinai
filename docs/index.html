@@ -71,6 +71,12 @@ td.mv{text-align:center;font-weight:700}
 .rs.ref{cursor:help}
 .ov{color:var(--blue2);font-size:9px;margin-left:4px;vertical-align:1px;cursor:help}
 .lgnote{color:var(--muted);font-size:11px;padding:4px 6px 0}
+.legend .lg .tw{display:inline-block;width:1.1em;color:var(--muted);font-size:12px}
+.legend .subs{display:grid;gap:1px;margin:0 0 4px 6px;padding-left:8px;border-left:2px solid #64748b}
+.legend .lg.sub{padding-top:2px;padding-bottom:2px;font-size:13px}
+.legend .lg.sub>span:nth-child(2){color:#9aa6bd}
+.legend .lg.sub .p{color:#b7c0d1;font-weight:600}
+.legend .lg.sub .v{color:#7d889c}
 .note{color:var(--muted);font-size:12px;margin-top:16px}
 .hint{color:var(--muted);font-size:12px;margin:2px 0 6px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:#1a2742;border:1px solid var(--blue2);color:var(--text);
@@ -136,7 +142,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
       <span class="lbl">規模</span><div class="seg" data-key="size1"><button data-v="all" class="on">すべて</button><button data-v="large">大型</button><button data-v="mid">中型</button><button data-v="small">小型</button></div>
       <span class="lbl">分類</span><div class="seg" data-key="cls"><button data-v="theme" class="on">テーマ反映</button><button data-v="raw">Nasdaq原分類</button></div>
     </div>
-    <p class="hint">業種名またはドーナツの扇をクリックすると、下のランキングをその業種で絞り込みます（もう一度クリックで解除）。</p>
+    <p class="hint">業種名またはドーナツの扇をクリックすると、下のランキングをその業種で絞り込みます（もう一度クリックで解除）。「その他」をクリックすると中身の業種を展開します。</p>
     <div class="donut"><svg id="donut" viewBox="0 0 230 230" role="img" aria-label="業種構成"></svg><div class="legend" id="legend"></div></div>
     <p class="note">「資金量」＝各業種に属する銘柄の売買代金（5日平均）の合計。上位150の業種構成を見て、大口資金がどの業種に厚いか／移動しているかを把握できます。「規模」で大型/中型/小型に絞れば、規模帯ごとの業種内訳も見られます。9業種目以降は「その他」に集約。</p>
   </section>
@@ -171,8 +177,9 @@ const OTHER="#64748b";
 const S={ud1:"all",weight:"dv",gran:"industry",size1:"all",cls:"theme",ud2:"all",size2:"all",topn:150,q:"",
   cmp:"1",  // 比較元: 何営業日前か（"1"=前営業日 / "5"=5営業日前）
   sort:{k:"dv5",dir:"desc"},
-  ind:null};  // 業種の絞り込み {label, other, names:Set, gran, cls}
-let DATA=null, ITEMS=[];
+  ind:null,   // 業種の絞り込み {label, other, names:Set, gran, cls}
+  expanded:false};  // 凡例の「その他」を展開しているか
+let DATA=null, ITEMS=[], SUBS=[];  // SUBS = 「その他」の中身（展開時に凡例へ並べる）
 // 比較元（なければ null）。DATES は index.json の並び（新しい順）なので i+n が n営業日前
 let DATES=[], BASE=null, BASE_RANK=new Map(), LOADSEQ=0;
 const JCACHE=new Map();
@@ -254,6 +261,8 @@ function renderDropped(){
 
 // ---------------------------------------------------------------- ドーナツ
 function isSel(it){ return !!S.ind && (it.other ? S.ind.other : !S.ind.other && S.ind.label===it.label); }
+// 「その他」の中の業種で絞り込み中なら、扇・凡例の「その他」も選択中として扱う
+const holdsSel=it=>isSel(it)||(it.other&&!!S.ind&&!S.ind.other&&it.names.includes(S.ind.label));
 function renderDonut(){
   const rows=DATA.rows.filter(r=>upDown(r,S.ud1));
   const cnt={large:0,mid:0,small:0}; rows.forEach(r=>cnt[r.size]++);
@@ -276,15 +285,18 @@ function renderDonut(){
   const named=ITEMS.filter(it=>!it.other).reduce((s,it)=>s+(baseShare(it.names)??0),0);
   ITEMS.forEach(it=>{const b=it.other?(B&&B.total?100-named:null):baseShare(it.names);
     it.delta=b==null?null:it.value/total*100-b;});
-  const anySel=ITEMS.some(isSel);
+  const OT=ITEMS.find(it=>it.other);
+  SUBS=OT?ents.slice(8).map(([k,v])=>{const b=baseShare([k]);return {label:k,value:v,names:[k],other:false,delta:b==null?null:v/total*100-b};}):[];
+  if(!OT) S.expanded=false;
+  const anySel=ITEMS.some(holdsSel);
 
   const R=100,r0=62,cx=115,cy=115; let a=-Math.PI/2, svg="";
   const p=(ang,rad)=>[cx+rad*Math.cos(ang),cy+rad*Math.sin(ang)];
   ITEMS.forEach((it,i)=>{
     const f=it.value/total, a1=a+f*2*Math.PI;
     const [x1,y1]=p(a,R),[x2,y2]=p(a1,R),[x3,y3]=p(a1,r0),[x4,y4]=p(a,r0), big=f>.5?1:0;
-    const cls=`slice${isSel(it)?" sel":anySel?" dim":""}`;
-    const tip=`<title>${esc(it.label)} ${(f*100).toFixed(1)}%（クリックで絞り込み）</title>`;
+    const cls=`slice${holdsSel(it)?" sel":anySel?" dim":""}`;
+    const tip=`<title>${esc(it.label)} ${(f*100).toFixed(1)}%（${it.other?"クリックで内訳を"+(S.expanded?"畳む":"展開"):"クリックで絞り込み"}）</title>`;
     if(f>=0.999) svg+=`<circle class="${cls}" data-i="${i}" cx="${cx}" cy="${cy}" r="${(R+r0)/2}" fill="none" stroke="${it.color}" stroke-width="${R-r0}">${tip}</circle>`;
     else if(f>0) svg+=`<path class="${cls}" data-i="${i}" d="M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${big} 0 ${x4} ${y4}Z" fill="${it.color}" stroke="var(--panel)" stroke-width="1.5">${tip}</path>`;
     if(f>=0.06){const [tx,ty]=p((a+a1)/2,(R+r0)/2);
@@ -299,8 +311,18 @@ function renderDonut(){
       +`<text class="c2" x="${cx}" y="${cy+19}" text-anchor="middle">${l1}</text>`
       +`<text class="c2" x="${cx}" y="${cy+33}" text-anchor="middle">${l2}</text>`;
   const el=$("#donut"); el.innerHTML=svg; fitCenter(el,cx,cy,r0);
-  $("#legend").innerHTML=ITEMS.map((it,i)=>{const sel=isSel(it);
-    return `<button type="button" class="lg${sel?" sel":anySel?" dim":""}" data-i="${i}" aria-pressed="${sel}"><i style="background:${it.color}"></i><span>${esc(it.label)}</span><span class="p">${(it.value/total*100).toFixed(1)}%</span><span class="d">${ptHtml(it.delta)}</span><span class="v">${S.weight==="dv"?fmtB(it.value):it.value+"銘柄"}</span></button>`;}).join("")||`<div class="empty">該当なし</div>`;
+  const amt=v=>S.weight==="dv"?fmtB(v):v+"銘柄";
+  const subSel=SUBS.some(isSel);
+  $("#legend").innerHTML=ITEMS.map((it,i)=>{
+    if(it.other){  // 「その他」はクリックで内訳を展開／畳む
+      const on=holdsSel(it);
+      const row=`<button type="button" class="lg${on?" sel":anySel?" dim":""}" data-i="${i}" aria-expanded="${S.expanded}" aria-controls="legendSubs" title="クリックで内訳を${S.expanded?"畳む":"展開"}"><i style="background:${it.color}"></i><span><span class="tw" aria-hidden="true">${S.expanded?"▾":"▸"}</span>${esc(it.label)}</span><span class="p">${(it.value/total*100).toFixed(1)}%</span><span class="d">${ptHtml(it.delta)}</span><span class="v">${amt(it.value)}</span></button>`;
+      const subs=S.expanded?`<div class="subs" id="legendSubs" role="group" aria-label="その他の内訳">${SUBS.map((sb,j)=>{const sel=isSel(sb);
+        return `<button type="button" class="lg sub${sel?" sel":subSel||anySel&&!on?" dim":""}" data-sub="${j}" aria-pressed="${sel}"><i></i><span>${esc(sb.label)}</span><span class="p">${(sb.value/total*100).toFixed(1)}%</span><span class="d">${ptHtml(sb.delta)}</span><span class="v">${amt(sb.value)}</span></button>`;}).join("")}</div>`:"";
+      return row+subs;
+    }
+    const sel=isSel(it);
+    return `<button type="button" class="lg${sel?" sel":anySel?" dim":""}" data-i="${i}" aria-pressed="${sel}"><i style="background:${it.color}"></i><span>${esc(it.label)}</span><span class="p">${(it.value/total*100).toFixed(1)}%</span><span class="d">${ptHtml(it.delta)}</span><span class="v">${amt(it.value)}</span></button>`;}).join("")||`<div class="empty">該当なし</div>`;
   if(BASE&&S.ud1!=="all"&&ITEMS.length) $("#legend").insertAdjacentHTML("beforeend",
     `<div class="lgnote">騰落で絞り込み中は比較元との差（pt）を表示しません（陽線・陰線の顔ぶれが日ごとに入れ替わるため）</div>`);
 }
@@ -324,11 +346,15 @@ function fitCenter(svg,cx,cy,r0){
 }
 function toggleInd(i){
   const it=ITEMS[i]; if(!it) return;
+  if(it.other){ S.expanded=!S.expanded; renderDonut(); return; }
   S.ind=isSel(it)?null:{label:it.label,other:it.other,names:new Set(it.names),gran:S.gran,cls:S.cls};
   render();
 }
 $("#donut").addEventListener("click",e=>{const t=e.target.closest("[data-i]"); if(t) toggleInd(+t.dataset.i);});
-$("#legend").addEventListener("click",e=>{const t=e.target.closest("button[data-i]"); if(t) toggleInd(+t.dataset.i);});
+$("#legend").addEventListener("click",e=>{
+  const sb=e.target.closest("button[data-sub]");
+  if(sb){ const it=SUBS[+sb.dataset.sub]; if(it){ S.ind=isSel(it)?null:{label:it.label,other:false,names:new Set(it.names),gran:S.gran,cls:S.cls}; render(); } return; }
+  const t=e.target.closest("button[data-i]"); if(t) toggleInd(+t.dataset.i);});
 $("#indClear").onclick=()=>{S.ind=null;render();};
 
 // ---------------------------------------------------------------- ランキング表
@@ -408,6 +434,7 @@ document.querySelectorAll(".seg").forEach(seg=>seg.addEventListener("click",e=>{
   seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
   const k=seg.dataset.key; S[k]=b.dataset.v;
   if(k==="gran"||k==="cls") S.ind=null;  // 分類の軸が変わると業種名が対応しないので解除
+  if(k==="gran"||k==="cls"||k==="size1") S.expanded=false;  // 中身が入れ替わるので「その他」は畳む
   if(k==="cmp") reloadBase(); else render();
 }));
 $("#size2").onchange=e=>{S.size2=e.target.value;renderTable();};
