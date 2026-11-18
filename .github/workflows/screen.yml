@@ -58,4 +58,8 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: docs
+      # アップロード直後は artifact が API にまだ見えず、deploy-pages が
+      # "Found 0 artifact(s)" で失敗することがある（10-14・11-17 に発生）。反映を待ってから公開する
+      - name: Wait for Pages artifact to become visible
+        run: sleep 10
       - uses: actions/deploy-pages@v5
