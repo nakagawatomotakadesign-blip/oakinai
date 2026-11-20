@@ -44,6 +44,8 @@ MIN_DV = 1_000_000             # 売買代金がこれ未満の銘柄はキャ�
 NEW_DAYS = 5                   # 取引日がこれ未満なら「上場N日目」の印をつける
 RELVOL_MIN_DAYS = 20           # 取引日がこれ未満なら RelVol は出さない（平均出来高が当てにならない）
 MAX_LOOKUP = 5                 # 一覧にない新規上場の候補を銘柄情報 API で確かめる上限（無料枠 5req/分）
+NEW_LOOKBACK = 20              # 初出が直近この営業日数以内なら補完の候補（Nasdaq 一覧への登録遅れに備える）
+NEW_WARN_DAYS = 10             # 補完がこの営業日数を超えて続いたら（一覧に載らないままなら）警告
 RS_WEIGHTS = {63: 0.4, 126: 0.2, 189: 0.2, 252: 0.2}  # 3/6/9/12ヶ月リターンの重み
 # ティッカー変更（新: 旧）。新ティッカーの初出より前を旧ティッカーの終値でつなぎ、RS を12ヶ月で計算する
 TICKER_CHANGES = {
@@ -215,13 +217,13 @@ def percentile_rank(s: pd.Series) -> pd.Series:
 
 
 def add_new_listings(universe: pd.DataFrame, first: pd.Series, dv5: pd.Series,
-                     dates: list) -> pd.DataFrame:
+                     dates: list, day_n: pd.Series) -> pd.DataFrame:
     """Nasdaq 一覧にまだ載っていない上場直後の銘柄を補う。
-    キャッシュに直近5営業日以内に初めて出てきて、売買代金5日平均が上位150の境目以上のものを候補にし、
+    キャッシュに直近 NEW_LOOKBACK 営業日以内に初めて出てきて、売買代金5日平均が上位150の境目以上のものを候補にし、
     Polygon の銘柄情報で普通株（type CS）と確かめられたものだけ加える。
     セクター・業種は未分類（必要なら theme_overrides で上書き）。時価総額が取れなければ NaN（規模は「新規」）。"""
     have = set(universe["symbol"])
-    recent = first[first >= dates[-5]].index
+    recent = first[first >= dates[-NEW_LOOKBACK]].index
     cand = dv5[[s for s in recent if s not in have]].sort_values(ascending=False)
     cutoff = dv5.reindex(universe["symbol"]).dropna().nlargest(TOP_N).min()
     cand = [s for s, v in cand.items() if v >= cutoff][:MAX_LOOKUP]
@@ -242,6 +244,12 @@ def add_new_listings(universe: pd.DataFrame, first: pd.Series, dv5: pd.Series,
                       "sector": "Unclassified", "industry": "Unclassified", "added": True})
     if added:
         print(f"[new] Nasdaq 一覧にない新規上場を追加: {', '.join(a['symbol'] for a in added)}", flush=True)
+        for a in added:
+            n = day_n.get(a["symbol"])
+            if pd.notna(n) and n > NEW_WARN_DAYS:
+                # ::warning:: は Actions の Annotations にも出る
+                print(f"::warning::{a['symbol']} は上場{int(n)}営業日目でも Nasdaq 一覧に載っていません"
+                      f"（補完は初出から{NEW_LOOKBACK}営業日まで。過ぎると圏外になります）", flush=True)
         universe = pd.concat([universe, pd.DataFrame(added)], ignore_index=True)
     return universe
 
@@ -266,7 +274,7 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     day_n = first.map(lambda d: len(close.index) - date_pos[d] if d in date_pos else np.nan)
     day_n = day_n.where((first > close.index[0]) & ~first.index.isin(list(TICKER_CHANGES)))
 
-    universe = add_new_listings(universe, first, dv5, list(close.index))
+    universe = add_new_listings(universe, first, dv5, list(close.index), day_n)
 
     last = pd.DataFrame({
         "close": close.loc[asof],
