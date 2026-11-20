@@ -5,6 +5,7 @@
   1. Nasdaq screener から全米上場「普通株」の一覧（時価総額・セクター・業種）を取得
   2. Polygon grouped daily で日足（終値・出来高）を取得し、cache/daily.parquet に差分追記
   3. 売買代金5日平均・規模区分・騰落・RelVol・RS Rating・業種RS を計算
+     （Nasdaq 一覧にまだ載っていない上場直後の大商い銘柄は、Polygon の銘柄情報で普通株と確かめて補う）
   4. docs/data/YYYY-MM-DD.json と docs/data/index.json を書き出す
 
 環境変数:
@@ -40,6 +41,9 @@ RS_LOOKBACK = 252              # 12ヶ月
 CACHE_KEEP = 300               # キャッシュに残す営業日数
 POLYGON_SLEEP = 12.5           # 無料枠 5req/分 → 12秒間隔
 MIN_DV = 1_000_000             # 売買代金がこれ未満の銘柄はキャッシュしない（容量削減）
+NEW_DAYS = 5                   # 取引日がこれ未満なら「上場N日目」の印をつける
+RELVOL_MIN_DAYS = 20           # 取引日がこれ未満なら RelVol は出さない（平均出来高が当てにならない）
+MAX_LOOKUP = 5                 # 一覧にない新規上場の候補を銘柄情報 API で確かめる上限（無料枠 5req/分）
 RS_WEIGHTS = {63: 0.4, 126: 0.2, 189: 0.2, 252: 0.2}  # 3/6/9/12ヶ月リターンの重み
 # ティッカー変更（新: 旧）。新ティッカーの初出より前を旧ティッカーの終値でつなぎ、RS を12ヶ月で計算する
 TICKER_CHANGES = {
@@ -104,6 +108,26 @@ def polygon_grouped(day: date) -> pd.DataFrame | None:
         df["date"] = pd.Timestamp(day)
         return df
     raise RuntimeError("Polygon rate limit: giving up")
+
+
+def polygon_ticker(symbol: str) -> dict | None:
+    """銘柄情報（type・社名・時価総額など）。取れなければ None（候補を見送るだけで処理は続ける）。"""
+    url = f"https://api.polygon.io/v3/reference/tickers/{symbol}"
+    for attempt in range(3):
+        try:
+            r = requests.get(url, params={"apiKey": POLYGON_KEY}, timeout=30)
+        except requests.RequestException as e:
+            print(f"[polygon] 銘柄情報 {symbol}: 通信エラー {e}", flush=True)
+            return None
+        if r.status_code == 429:
+            time.sleep(60)
+            continue
+        if r.status_code != 200:
+            print(f"[polygon] 銘柄情報 {symbol}: HTTP {r.status_code} {r.text[:200]}", flush=True)
+            return None
+        return r.json().get("results") or None
+    print(f"[polygon] 銘柄情報 {symbol}: rate limit のため見送り", flush=True)
+    return None
 
 
 def load_cache() -> pd.DataFrame:
@@ -190,6 +214,38 @@ def percentile_rank(s: pd.Series) -> pd.Series:
     return (s.rank(pct=True) * 98 + 1).round().clip(1, 99)
 
 
+def add_new_listings(universe: pd.DataFrame, first: pd.Series, dv5: pd.Series,
+                     dates: list) -> pd.DataFrame:
+    """Nasdaq 一覧にまだ載っていない上場直後の銘柄を補う。
+    キャッシュに直近5営業日以内に初めて出てきて、売買代金5日平均が上位150の境目以上のものを候補にし、
+    Polygon の銘柄情報で普通株（type CS）と確かめられたものだけ加える。
+    セクター・業種は未分類（必要なら theme_overrides で上書き）。時価総額が取れなければ NaN（規模は「新規」）。"""
+    have = set(universe["symbol"])
+    recent = first[first >= dates[-5]].index
+    cand = dv5[[s for s in recent if s not in have]].sort_values(ascending=False)
+    cutoff = dv5.reindex(universe["symbol"]).dropna().nlargest(TOP_N).min()
+    cand = [s for s, v in cand.items() if v >= cutoff][:MAX_LOOKUP]
+    added = []
+    for i, s in enumerate(cand):
+        if i:
+            time.sleep(POLYGON_SLEEP)
+        info = polygon_ticker(s)
+        if info is None:
+            continue
+        mc = info.get("market_cap")
+        print(f"[polygon] 銘柄情報 {s}: type={info.get('type')} name={info.get('name')!r} "
+              f"market_cap={mc} list_date={info.get('list_date')}", flush=True)
+        if info.get("type") != "CS":
+            continue
+        added.append({"symbol": s, "name": info.get("name") or s,
+                      "mcap": float(mc) if mc else np.nan,
+                      "sector": "Unclassified", "industry": "Unclassified", "added": True})
+    if added:
+        print(f"[new] Nasdaq 一覧にない新規上場を追加: {', '.join(a['symbol'] for a in added)}", flush=True)
+        universe = pd.concat([universe, pd.DataFrame(added)], ignore_index=True)
+    return universe
+
+
 def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     dates = sorted(cache["date"].unique())
     if len(dates) < 6:
@@ -201,14 +257,26 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     vol = cache.pivot(index="date", columns="symbol", values="volume").sort_index()
     opn = cache.pivot(index="date", columns="symbol", values="open").sort_index()
     dollar = (close * vol)
+    # 5日平均は直近5営業日の合計 ÷ 5（取引のない日・キャッシュにない日は0）。上場直後は日割りで小さく出る
+    dv5 = dollar.tail(5).fillna(0).sum() / 5
+    first = close.apply(lambda s: s.first_valid_index())
+    ntrade = close.notna().sum()  # キャッシュ内の取引日数（売買代金 $1M 未満の日は数えない）
+    # 上場N日目: キャッシュの初日より後に初めて出てきた銘柄の、初出からの営業日数（初出日=1日目）
+    date_pos = {d: i for i, d in enumerate(close.index)}
+    day_n = first.map(lambda d: len(close.index) - date_pos[d] if d in date_pos else np.nan)
+    day_n = day_n.where((first > close.index[0]) & ~first.index.isin(list(TICKER_CHANGES)))
+
+    universe = add_new_listings(universe, first, dv5, list(close.index))
 
     last = pd.DataFrame({
         "close": close.loc[asof],
         "open": opn.loc[asof],
         "prev_close": close.loc[prev],
         "volume": vol.loc[asof],
-        "dv5": dollar.tail(5).mean(),
+        "dv5": dv5,
         "vol63": vol.tail(63).mean(),
+        "ntrade": ntrade,
+        "day_n": day_n,
     })
     last.index.name = "symbol"
     last = last.reset_index()
@@ -235,7 +303,8 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
     rs_young = rs_young.where(avail[63])
 
     df = universe.merge(last, on="symbol", how="inner")
-    df = df.dropna(subset=["close", "prev_close", "dv5"])
+    # 前日終値がない銘柄（上場初日など）も残す。前日比は出さない
+    df = df.dropna(subset=["close", "dv5"])
     df["rs_raw"] = df["symbol"].map(rs_raw)
     df["rs"] = percentile_rank(df["rs_raw"]) if rs_ok else np.nan
     # 参考値は12ヶ月そろった銘柄の分布に当てはめて順位化する（既存銘柄の RS は変えない）
@@ -250,20 +319,23 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
             df.loc[m, "rs_ref"] = True
 
     # 規模 = 時価総額順位
-    df["mcap_rank"] = df["mcap"].rank(ascending=False, method="first").astype(int)
-    df["size"] = np.where(df["mcap_rank"] <= LARGE_CUT, "large",
-                 np.where(df["mcap_rank"] <= MID_CUT, "mid", "small"))
+    # 時価総額が取れない新規上場は「新規」(ipo)
+    mcap_rank = df["mcap"].rank(ascending=False, method="first")
+    df["size"] = np.select([mcap_rank.isna(), mcap_rank <= LARGE_CUT, mcap_rank <= MID_CUT],
+                           ["ipo", "large", "mid"], "small")
 
     # 業種RS = 業種内の中央値RSを業種間でパーセンタイル化
     if rs_ok:
         ind_med = df.groupby("industry")["rs_raw"].median()
         ind_rs = percentile_rank(ind_med)
         df["ind_rs"] = df["industry"].map(ind_rs)
+        if "added" in df:  # 補った銘柄の業種は仮の「未分類」なので業種RSは出さない
+            df.loc[df["added"].eq(True), "ind_rs"] = np.nan
     else:
         df["ind_rs"] = np.nan
 
     df["chg"] = (df["close"] / df["prev_close"] - 1) * 100
-    df["relvol"] = df["volume"] / df["vol63"]
+    df["relvol"] = (df["volume"] / df["vol63"]).where(df["ntrade"] >= RELVOL_MIN_DAYS)
 
     # 日本語分類（原分類 + テーマ反映）
     for kind in ("sector", "industry"):
@@ -293,6 +365,7 @@ def compute(universe: pd.DataFrame, cache: pd.DataFrame) -> dict:
             "chg": f(r["chg"]), "mcap": f(r["mcap"], 0), "relvol": f(r["relvol"], 1),
             "rs": None if pd.isna(r["rs"]) else int(r["rs"]),
             **({"rs_ref": True} if r["rs_ref"] else {}),
+            **({"day": int(r["day_n"])} if r["day_n"] < NEW_DAYS else {}),
             "ind_rs": None if pd.isna(r["ind_rs"]) else int(r["ind_rs"]),
             "sector": r["sector_ja"], "industry": r["industry_ja"],
             "theme_sector": r["theme_sector_ja"], "theme_industry": r["theme_ja"],

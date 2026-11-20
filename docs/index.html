@@ -32,12 +32,14 @@ header .right{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-it
 .seg button:focus-visible{outline:2px solid var(--blue2);outline-offset:-2px}
 .lbl{color:var(--muted);font-size:12px;margin-right:2px}
 .ctrls{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0 14px}
-.sizes{display:flex;gap:14px;align-items:center;margin-bottom:8px;color:var(--muted);font-size:13px}
+.sizes{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-bottom:8px;color:var(--muted);font-size:13px}
 .sizes b{color:var(--text);font-size:18px;margin:0 3px}
 .tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;border:1px solid}
 .tag.large{color:#c9d3e6;background:#242f47;border-color:#3a4763}
 .tag.mid{color:#8fe3ff;background:#123945;border-color:#1f6478}
 .tag.small{color:#ffe08a;background:#43370f;border-color:#7b6414}
+.tag.ipo{color:#f5d0fe;background:#3f1d4a;border-color:#7e3a93}
+.dayn{display:inline-block;margin-right:6px;padding:0 5px;border-radius:4px;font-size:10px;font-weight:700;color:#f5d0fe;border:1px solid #7e3a93;vertical-align:1px}
 .donut{display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:start}
 .donut svg{width:230px;height:230px;display:block}
 .donut .c1{font-size:18px;font-weight:800;fill:#fff}
@@ -139,7 +141,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
     <div class="ctrls">
       <span class="lbl">重み</span><div class="seg" data-key="weight"><button data-v="dv" class="on">資金量</button><button data-v="n">銘柄数</button></div>
       <span class="lbl">粒度</span><div class="seg" data-key="gran"><button data-v="industry" class="on">インダストリー</button><button data-v="sector">セクター</button></div>
-      <span class="lbl">規模</span><div class="seg" data-key="size1"><button data-v="all" class="on">すべて</button><button data-v="large">大型</button><button data-v="mid">中型</button><button data-v="small">小型</button></div>
+      <span class="lbl">規模</span><div class="seg" data-key="size1"><button data-v="all" class="on">すべて</button><button data-v="large">大型</button><button data-v="mid">中型</button><button data-v="small">小型</button><button data-v="ipo" hidden>新規</button></div>
       <span class="lbl">分類</span><div class="seg" data-key="cls"><button data-v="theme" class="on">テーマ反映</button><button data-v="raw">Nasdaq原分類</button></div>
     </div>
     <p class="hint">業種名またはドーナツの扇をクリックすると、下のランキングをその業種で絞り込みます（もう一度クリックで解除）。「その他」をクリックすると中身の業種を展開します。</p>
@@ -153,7 +155,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px 40px;lin
       <span class="chip" id="indChip" hidden><span id="indChipText"></span><button type="button" id="indClear" aria-label="業種の絞り込みを解除" title="絞り込みを解除">✕</button></span>
       <div class="right">
         <input class="search" id="q" placeholder="ティッカー/銘柄/業種で絞り込み">
-        <span class="lbl">規模</span><select id="size2"><option value="all">すべて</option><option value="large">大型</option><option value="mid">中型</option><option value="small">小型</option></select>
+        <span class="lbl">規模</span><select id="size2"><option value="all">すべて</option><option value="large">大型</option><option value="mid">中型</option><option value="small">小型</option><option value="ipo" hidden>新規</option></select>
         <span class="lbl">騰落</span><div class="seg" data-key="ud2"><button data-v="all" class="on">すべて</button><button data-v="up">陽線</button><button data-v="down">陰線</button></div>
         <span class="lbl">表示</span><select id="topn"><option value="50">上位50</option><option value="100">上位100</option><option value="150" selected>上位150</option></select>
         <button class="btn" id="copy">TVリストをコピー</button>
@@ -197,7 +199,9 @@ const pad=n=>String(n).padStart(2,"0");
 const fmtJST=iso=>{const d=new Date(iso); if(!iso||isNaN(d)) return iso||"—";
   const j=new Date(d.getTime()+9*3600e3);
   return `${j.getUTCFullYear()}-${pad(j.getUTCMonth()+1)}-${pad(j.getUTCDate())} ${pad(j.getUTCHours())}:${pad(j.getUTCMinutes())} JST`;};
-const SZ={large:"大型",mid:"中型",small:"小型"};
+// ipo = 時価総額が取れない上場直後の銘柄（Nasdaq 一覧にまだ載っていない）
+const SZ={large:"大型",mid:"中型",small:"小型",ipo:"新規"};
+const SIZES=()=>["large","mid","small",...(DATA.rows.some(r=>r.size==="ipo")?["ipo"]:[])];
 const rsCls=v=>v==null?"n":v>=70?"g":v>=50?"y":v>=30?"o":"r";
 const indCls=v=>v==null?"n":v>=60?"g":v>=40?"y":v>=20?"o":"r";
 // ローソク足: 1=陽線(終値>始値) / -1=陰線(終値<始値) / 0=同値・始値なし
@@ -220,7 +224,13 @@ async function load(d){
   const [cur,base]=await Promise.all([getDay(d), bd?getDay(bd).catch(()=>null):null]);
   if(seq!==LOADSEQ) return;  // 連続で切り替えた時は最後の選択だけ反映
   DATA=cur; setBase(base);
-  $("#cond").textContent=`条件: 売買代金（株価×出来高）5日移動平均の全体上位150｜普通株のみ（ETF除外）｜規模は時価総額の順位（大型=上位${DATA.cuts.large}位 / 中型=${DATA.cuts.large+1}〜${DATA.cuts.mid}位 / 小型=${DATA.cuts.mid+1}位以下）｜母集団 ${DATA.universe_count.toLocaleString()} 銘柄　生成: ${fmtJST(DATA.generated)}`;
+  // 「新規」はその日に該当銘柄があるときだけ選べるようにする
+  const hasIpo=SIZES().includes("ipo");
+  document.querySelector('.seg[data-key="size1"] button[data-v="ipo"]').hidden=!hasIpo;
+  document.querySelector('#size2 option[value="ipo"]').hidden=!hasIpo;
+  if(!hasIpo&&S.size1==="ipo"){S.size1="all"; document.querySelectorAll('.seg[data-key="size1"] button').forEach(x=>x.classList.toggle("on",x.dataset.v==="all"));}
+  if(!hasIpo&&S.size2==="ipo"){S.size2="all"; $("#size2").value="all";}
+  $("#cond").textContent=`条件: 売買代金（株価×出来高）5日移動平均の全体上位150｜普通株のみ（ETF除外）｜規模は時価総額の順位（大型=上位${DATA.cuts.large}位 / 中型=${DATA.cuts.large+1}〜${DATA.cuts.mid}位 / 小型=${DATA.cuts.mid+1}位以下${SIZES().includes("ipo")?" / 新規=時価総額未取得の上場直後":""}）｜母集団 ${DATA.universe_count.toLocaleString()} 銘柄　生成: ${fmtJST(DATA.generated)}`;
   $("#sub1").textContent=`${DATA.date}・上位150銘柄が母集団`;
   $("#sub2").textContent=`${DATA.date}・全体上位（売買代金5日平均）`;
   render();
@@ -265,10 +275,10 @@ function isSel(it){ return !!S.ind && (it.other ? S.ind.other : !S.ind.other && 
 const holdsSel=it=>isSel(it)||(it.other&&!!S.ind&&!S.ind.other&&it.names.includes(S.ind.label));
 function renderDonut(){
   const rows=DATA.rows.filter(r=>upDown(r,S.ud1));
-  const cnt={large:0,mid:0,small:0}; rows.forEach(r=>cnt[r.size]++);
+  const cnt={large:0,mid:0,small:0,ipo:0}; rows.forEach(r=>cnt[r.size]++);
   const tot=rows.length||1;
   const udLbl={all:"上位150銘柄",up:`上位150中の陽線${rows.length}銘柄`,down:`上位150中の陰線${rows.length}銘柄`}[S.ud1];
-  $("#sizes").innerHTML=`<span>${udLbl}の規模内訳</span>`+["large","mid","small"].map(k=>`<span><span class="tag ${k}">${SZ[k]}</span><b>${cnt[k]}</b>(${Math.round(cnt[k]/tot*100)}%)</span>`).join("");
+  $("#sizes").innerHTML=`<span>${udLbl}の規模内訳</span>`+SIZES().map(k=>`<span><span class="tag ${k}">${SZ[k]}</span><b>${cnt[k]}</b>(${Math.round(cnt[k]/tot*100)}%)</span>`).join("");
 
   const {agg,total:tot0}=aggregate(DATA.rows);
   let ents=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
@@ -359,7 +369,7 @@ $("#indClear").onclick=()=>{S.ind=null;render();};
 
 // ---------------------------------------------------------------- ランキング表
 // # は常に売買代金順位（並べ替えても振り直さない）。数値列は初回クリックで降順、文字列列は昇順
-const SIZE_ORDER={large:0,mid:1,small:2};
+const SIZE_ORDER={large:0,mid:1,small:2,ipo:3};
 const COLS=[
   {k:"rank",  h:"#",                 v:r=>r.rank,              first:"asc"},
   // NEW は降順（上昇順）で先頭に来るよう最大値扱い
@@ -420,7 +430,7 @@ function renderTable(){
   const rows=visible();
   $("#tbody").innerHTML=rows.map(r=>`<tr>
     <td>${r.rank}</td>${BASE?`<td class="mv">${moveHtml(r)}</td>`:""}<td class="l"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a></td>
-    <td class="l co" title="${esc(r.name)}">${esc(r.name)}</td><td class="l"><span class="tag ${r.size}">${SZ[r.size]}</span></td>
+    <td class="l co" title="${esc(r.name)}">${r.day?`<span class="dayn" title="上場${r.day}日目。売買代金(5日平均)は直近5営業日の合計÷5なので、取引のない日は0として小さく出ます">上場${r.day}日目</span>`:""}${esc(r.name)}</td><td class="l"><span class="tag ${r.size}">${SZ[r.size]}</span></td>
     <td class="dv">${fmtB(r.dv5)}</td><td>$${r.price.toFixed(2)}</td><td>${fmtN(r.volume)}</td>
     <td class="${r.chg>0?"up":r.chg<0?"down":""}">${r.chg==null?"—":(r.chg>0?"+":"")+r.chg.toFixed(2)+"%"}</td>
     <td>${fmtB(r.mcap)}</td><td>${r.relvol==null?"—":r.relvol.toFixed(1)}</td>
