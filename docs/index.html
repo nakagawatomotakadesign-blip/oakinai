@@ -91,7 +91,7 @@ select{background:var(--panel2);border:1px solid var(--line);border-radius:7px;p
 .btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 12px;cursor:pointer}
 .btn:hover{border-color:var(--blue2)}
 .tbl{overflow:auto;max-height:70vh;border-top:1px solid var(--line)}
-table{border-collapse:collapse;width:100%;min-width:1180px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;min-width:1270px;font-variant-numeric:tabular-nums}
 th{position:sticky;top:0;background:#141f35;color:var(--muted);font-weight:600;text-align:right;padding:9px 10px;font-size:13px;z-index:1;white-space:nowrap}
 th.l,td.l{text-align:left}
 th button.sh{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
@@ -194,6 +194,8 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmtB=v=>v==null?"—":v>=1e12?"$"+(v/1e12).toFixed(2)+"T":v>=1e9?"$"+(v/1e9).toFixed(2)+"B":v>=1e6?"$"+(v/1e6).toFixed(0)+"M":"$"+v.toFixed(0);
 const fmtN=v=>v==null?"—":v.toLocaleString("en-US");
+// 当日の売買代金 = 終値 × 当日出来高（日次 JSON の price・volume から計算。過去日もそのまま出る）
+const dvDay=r=>r.price==null||r.volume==null?null:r.price*r.volume;
 const pad=n=>String(n).padStart(2,"0");
 // 生成時刻（ISO, UTC）→ "2026-10-15 15:01 JST"
 const fmtJST=iso=>{const d=new Date(iso); if(!iso||isNaN(d)) return iso||"—";
@@ -217,7 +219,7 @@ async function init(){
   const sel=$("#dateSel");
   sel.innerHTML=idx.dates.map(d=>`<option value="${d}">${d}（150銘柄）</option>`).join("");
   sel.onchange=()=>load(sel.value);
-  if(idx.dates.length) load(idx.dates[0]); else $("#tbody").innerHTML=`<tr><td colspan="14" class="empty">まだデータがありません。GitHub Actions を一度実行してください。</td></tr>`;
+  if(idx.dates.length) load(idx.dates[0]); else $("#tbody").innerHTML=`<tr><td colspan="15" class="empty">まだデータがありません。GitHub Actions を一度実行してください。</td></tr>`;
 }
 async function load(d){
   const seq=++LOADSEQ, bd=baseDateOf(d);
@@ -378,8 +380,9 @@ const COLS=[
   {k:"name",  h:"Company",          v:r=>r.name,              first:"asc", l:1},
   {k:"size",  h:"規模",              v:r=>SIZE_ORDER[r.size],  first:"asc", l:1},
   {k:"dv5",   h:"売買代金(5日平均)", v:r=>r.dv5,               first:"desc"},
+  {k:"dvday", h:"売買代金(当日)",    v:dvDay,                  first:"desc"},
   {k:"price", h:"株価",              v:r=>r.price,             first:"desc"},
-  {k:"volume",h:"出来高(当日)",      v:r=>r.volume,            first:"desc"},
+  {k:"volume",h:"出来高(株数)",      v:r=>r.volume,            first:"desc"},
   {k:"chg",   h:"前日比",            v:r=>r.chg,               first:"desc"},
   {k:"mcap",  h:"時価総額",          v:r=>r.mcap,              first:"desc"},
   {k:"relvol",h:"RelVol",           v:r=>r.relvol,            first:"desc"},
@@ -431,7 +434,7 @@ function renderTable(){
   $("#tbody").innerHTML=rows.map(r=>`<tr>
     <td>${r.rank}</td>${BASE?`<td class="mv">${moveHtml(r)}</td>`:""}<td class="l"><a href="https://finviz.com/quote.ashx?t=${encodeURIComponent(r.ticker.replace(".","-"))}&p=d" target="_blank" rel="noopener">${r.ticker}</a></td>
     <td class="l co" title="${esc(r.name)}">${r.day?`<span class="dayn" title="上場${r.day}日目。売買代金(5日平均)は直近5営業日の合計÷5なので、取引のない日は0として小さく出ます">上場${r.day}日目</span>`:""}${esc(r.name)}</td><td class="l"><span class="tag ${r.size}">${SZ[r.size]}</span></td>
-    <td class="dv">${fmtB(r.dv5)}</td><td>$${r.price.toFixed(2)}</td><td>${fmtN(r.volume)}</td>
+    <td class="dv">${fmtB(r.dv5)}</td><td>${fmtB(dvDay(r))}</td><td>$${r.price.toFixed(2)}</td><td>${fmtN(r.volume)}</td>
     <td class="${r.chg>0?"up":r.chg<0?"down":""}">${r.chg==null?"—":(r.chg>0?"+":"")+r.chg.toFixed(2)+"%"}</td>
     <td>${fmtB(r.mcap)}</td><td>${r.relvol==null?"—":r.relvol.toFixed(1)}</td>
     <td>${r.rs_ref?`<span class="rs ref ${rsCls(r.rs)}" title="上場1年未満のため参考値（存在する期間のリターンで計算）">${r.rs}*</span>`:`<span class="rs ${rsCls(r.rs)}">${r.rs??"—"}</span>`}</td><td><span class="rs ${indCls(r.ind_rs)}">${r.ind_rs??"—"}</span></td>
